@@ -287,11 +287,11 @@ function Road() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[300, 300]} />
-        <meshStandardMaterial color="#4a3a22" roughness={1} />
+        <meshStandardMaterial color="#2a2418" roughness={0.85} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
         <planeGeometry args={[300, 8]} />
-        <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
+        <meshStandardMaterial color="#15171a" roughness={0.35} metalness={0.2} />
       </mesh>
       {/* dashed center line */}
       {Array.from({ length: 30 }).map((_, i) => (
