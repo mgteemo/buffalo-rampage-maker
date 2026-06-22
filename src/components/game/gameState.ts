@@ -29,21 +29,37 @@ export const stats = {
   karma: 100,
 };
 
-// ----- Player progression: coins + skins -----
+// ----- Player progression: coins + skins + best records -----
 const STORAGE_KEY = "buffalo-player-v1";
-type PersistedPlayer = { coins: number; ownedSkins: string[]; equippedSkin: string };
+type PersistedPlayer = {
+  coins: number;
+  ownedSkins: string[];
+  equippedSkin: string;
+  bestLevel?: number;
+  bestScore?: number;
+};
+
+const DEFAULTS: PersistedPlayer = {
+  coins: 0,
+  ownedSkins: ["classic"],
+  equippedSkin: "classic",
+  bestLevel: 1,
+  bestScore: 0,
+};
 
 function loadPlayer(): PersistedPlayer {
-  if (typeof window === "undefined") return { coins: 0, ownedSkins: ["classic"], equippedSkin: "classic" };
+  if (typeof window === "undefined") return { ...DEFAULTS };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { coins: 0, ownedSkins: ["classic"], equippedSkin: "classic" };
+    if (!raw) return { ...DEFAULTS };
     const p = JSON.parse(raw) as PersistedPlayer;
     if (!p.ownedSkins?.includes("classic")) p.ownedSkins = ["classic", ...(p.ownedSkins ?? [])];
     if (!p.equippedSkin) p.equippedSkin = "classic";
+    if (typeof p.bestLevel !== "number") p.bestLevel = 1;
+    if (typeof p.bestScore !== "number") p.bestScore = 0;
     return p;
   } catch {
-    return { coins: 0, ownedSkins: ["classic"], equippedSkin: "classic" };
+    return { ...DEFAULTS };
   }
 }
 
@@ -52,6 +68,8 @@ export const player = {
   coins: persisted.coins,
   ownedSkins: new Set<string>(persisted.ownedSkins),
   equippedSkin: persisted.equippedSkin,
+  bestLevel: persisted.bestLevel ?? 1,
+  bestScore: persisted.bestScore ?? 0,
 };
 
 const playerListeners = new Set<() => void>();
