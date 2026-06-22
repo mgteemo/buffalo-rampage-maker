@@ -192,18 +192,18 @@ export function CinematicIntro({ onDone }: Props) {
    ============================================================ */
 
 function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
+  // Overcast rainy sky throughout; brief red flash on crash.
   const skyColor = useMemo(() => {
-    if (scene <= 1) return new THREE.Color("#f59e42");
-    if (scene === 2) return new THREE.Color("#7f1d1d");
-    return new THREE.Color("#1e293b");
+    if (scene === 2) return new THREE.Color("#5a2a2a");
+    return new THREE.Color("#4b5563");
   }, [scene]);
 
-  const sunColor = scene <= 1 ? "#ffd089" : scene === 2 ? "#ff8060" : "#7a8aa0";
-  const sunIntensity = scene === 2 ? 2.2 : 1.1;
+  const sunColor = scene === 2 ? "#ff8060" : "#aab4c0";
+  const sunIntensity = scene === 2 ? 1.8 : 0.7;
 
   return (
     <>
-      <ambientLight intensity={scene <= 1 ? 0.55 : 0.35} />
+      <ambientLight intensity={scene === 2 ? 0.55 : 0.75} color="#c4ccd6" />
       <directionalLight
         position={[8, 12, 6]}
         intensity={sunIntensity}
@@ -212,10 +212,11 @@ function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <hemisphereLight args={[skyColor, "#2a1810", 0.4]} />
+      <hemisphereLight args={[skyColor, "#1c2229", 0.55]} />
 
       <Sky color={skyColor} />
       <Road />
+      <Rain />
       <Camera t={t} scene={scene} />
 
       <Truck t={t} scene={scene} />
@@ -226,6 +227,48 @@ function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
       {scene >= 2 && <CrashParticles t={t} scene={scene} />}
       {scene === 2 && <CrashBurst />}
     </>
+  );
+}
+
+/* Animated rain — vertical streaks falling and re-wrapping above the camera. */
+function Rain() {
+  const ref = useRef<THREE.Points>(null!);
+  const COUNT = 900;
+  const { positions, speeds } = useMemo(() => {
+    const positions = new Float32Array(COUNT * 3);
+    const speeds = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 60;
+      positions[i * 3 + 1] = Math.random() * 30;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+      speeds[i] = 0.45 + Math.random() * 0.5;
+    }
+    return { positions, speeds };
+  }, []);
+  useFrame((_, delta) => {
+    const p = ref.current;
+    if (!p) return;
+    const arr = (p.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
+    for (let i = 0; i < COUNT; i++) {
+      arr[i * 3 + 1] -= speeds[i] * delta * 38;
+      if (arr[i * 3 + 1] < 0.1) {
+        arr[i * 3 + 1] = 26 + Math.random() * 6;
+        arr[i * 3 + 0] = (Math.random() - 0.5) * 60;
+        arr[i * 3 + 2] = (Math.random() - 0.5) * 60;
+      }
+    }
+    (p.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+  });
+  return (
+    <points ref={ref} frustumCulled={false}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial color="#c8d4e0" size={0.08} transparent opacity={0.7} sizeAttenuation />
+    </points>
   );
 }
 
