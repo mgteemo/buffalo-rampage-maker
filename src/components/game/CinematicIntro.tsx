@@ -7,14 +7,25 @@ type Props = { onDone: () => void };
 
 // Scene timings (seconds, cumulative)
 const SCENES = [
-  { id: 0, until: 3.5, label: "A peaceful highway at dawn..." },
-  { id: 1, until: 6.8, label: "A tractor swerves into the lane!" },
-  { id: 2, until: 9.2, label: "CRASH!" },
-  { id: 3, until: 12.8, label: "The wounded trucker drags himself to the cage..." },
-  { id: 4, until: 17.5, label: "" },
-  { id: 5, until: 21.5, label: "" },
-  { id: 6, until: 24.5, label: "" },
+  { id: 0, until: 3.8, label: "A rainy highway at dawn..." },
+  { id: 1, until: 6.6, label: "A tractor swerves into the lane!" },
+  { id: 2, until: 8.8, label: "CRASH!" },
+  { id: 3, until: 12.4, label: "The wounded trucker drags himself to the cage..." },
+  { id: 4, until: 17.0, label: "" },
+  { id: 5, until: 21.0, label: "" },
+  { id: 6, until: 24.0, label: "" },
 ];
+
+// Narration spoken at the start of each scene (browser SpeechSynthesis).
+const NARRATION: Record<number, string> = {
+  0: "On a quiet, rainy highway at dawn, a kind trucker drives home.",
+  1: "Out of the rain, a tractor swerves into his lane.",
+  2: "Crash!",
+  3: "Wounded, he drags himself to the cage.",
+  4: "Run free, buddy. Don't let them hurt you.",
+  5: "Tell my wife and son... that I love them.",
+  6: "Rest in peace, kind trucker.",
+};
 const TOTAL = SCENES[SCENES.length - 1].until;
 
 export function CinematicIntro({ onDone }: Props) {
@@ -41,6 +52,36 @@ export function CinematicIntro({ onDone }: Props) {
   const scene = SCENES.find((s) => t < s.until)?.id ?? SCENES.length - 1;
   const skin = findSkin("classic");
 
+  // Voiceover: speak each scene's narration line when the scene changes.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const text = NARRATION[scene];
+    if (!text) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 0.9;
+      u.volume = 1;
+      // Prefer a deeper English voice when available.
+      const voices = window.speechSynthesis.getVoices();
+      const pick =
+        voices.find((v) => /en[-_]?(US|GB)/i.test(v.lang) && /male|daniel|fred|alex/i.test(v.name)) ??
+        voices.find((v) => v.lang?.startsWith("en"));
+      if (pick) u.voice = pick;
+      window.speechSynthesis.speak(u);
+    } catch {
+      // Speech synthesis blocked in some embedded previews; silent fallback.
+    }
+  }, [scene]);
+
+  // Stop any narration if the user skips or the cinematic unmounts.
+  useEffect(() => {
+    return () => {
+      try { window.speechSynthesis?.cancel(); } catch { /* */ }
+    };
+  }, []);
+
   // Speech bubble visibility / text per scene
   const bubble =
     scene === 4
@@ -56,8 +97,8 @@ export function CinematicIntro({ onDone }: Props) {
         camera={{ position: [0, 4, 14], fov: 50 }}
         gl={{ antialias: true }}
       >
-        <color attach="background" args={["#1a1410"]} />
-        <fog attach="fog" args={["#1a1410", 25, 70]} />
+        <color attach="background" args={["#3b4450"]} />
+        <fog attach="fog" args={["#3b4450", 18, 55]} />
         <Suspense fallback={null}>
           <Scene t={t} scene={scene} skin={skin} />
         </Suspense>
@@ -151,18 +192,18 @@ export function CinematicIntro({ onDone }: Props) {
    ============================================================ */
 
 function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
+  // Overcast rainy sky throughout; brief red flash on crash.
   const skyColor = useMemo(() => {
-    if (scene <= 1) return new THREE.Color("#f59e42");
-    if (scene === 2) return new THREE.Color("#7f1d1d");
-    return new THREE.Color("#1e293b");
+    if (scene === 2) return new THREE.Color("#5a2a2a");
+    return new THREE.Color("#4b5563");
   }, [scene]);
 
-  const sunColor = scene <= 1 ? "#ffd089" : scene === 2 ? "#ff8060" : "#7a8aa0";
-  const sunIntensity = scene === 2 ? 2.2 : 1.1;
+  const sunColor = scene === 2 ? "#ff8060" : "#aab4c0";
+  const sunIntensity = scene === 2 ? 1.8 : 0.7;
 
   return (
     <>
-      <ambientLight intensity={scene <= 1 ? 0.55 : 0.35} />
+      <ambientLight intensity={scene === 2 ? 0.55 : 0.75} color="#c4ccd6" />
       <directionalLight
         position={[8, 12, 6]}
         intensity={sunIntensity}
@@ -171,10 +212,11 @@ function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <hemisphereLight args={[skyColor, "#2a1810", 0.4]} />
+      <hemisphereLight args={[skyColor, "#1c2229", 0.55]} />
 
       <Sky color={skyColor} />
       <Road />
+      <Rain />
       <Camera t={t} scene={scene} />
 
       <Truck t={t} scene={scene} />
@@ -185,6 +227,48 @@ function Scene({ t, scene, skin }: { t: number; scene: number; skin: Skin }) {
       {scene >= 2 && <CrashParticles t={t} scene={scene} />}
       {scene === 2 && <CrashBurst />}
     </>
+  );
+}
+
+/* Animated rain — vertical streaks falling and re-wrapping above the camera. */
+function Rain() {
+  const ref = useRef<THREE.Points>(null!);
+  const COUNT = 900;
+  const { positions, speeds } = useMemo(() => {
+    const positions = new Float32Array(COUNT * 3);
+    const speeds = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 60;
+      positions[i * 3 + 1] = Math.random() * 30;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+      speeds[i] = 0.45 + Math.random() * 0.5;
+    }
+    return { positions, speeds };
+  }, []);
+  useFrame((_, delta) => {
+    const p = ref.current;
+    if (!p) return;
+    const arr = (p.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
+    for (let i = 0; i < COUNT; i++) {
+      arr[i * 3 + 1] -= speeds[i] * delta * 38;
+      if (arr[i * 3 + 1] < 0.1) {
+        arr[i * 3 + 1] = 26 + Math.random() * 6;
+        arr[i * 3 + 0] = (Math.random() - 0.5) * 60;
+        arr[i * 3 + 2] = (Math.random() - 0.5) * 60;
+      }
+    }
+    (p.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+  });
+  return (
+    <points ref={ref} frustumCulled={false}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial color="#c8d4e0" size={0.08} transparent opacity={0.7} sizeAttenuation />
+    </points>
   );
 }
 
@@ -203,11 +287,11 @@ function Road() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[300, 300]} />
-        <meshStandardMaterial color="#4a3a22" roughness={1} />
+        <meshStandardMaterial color="#2a2418" roughness={0.85} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
         <planeGeometry args={[300, 8]} />
-        <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
+        <meshStandardMaterial color="#15171a" roughness={0.35} metalness={0.2} />
       </mesh>
       {/* dashed center line */}
       {Array.from({ length: 30 }).map((_, i) => (
@@ -291,24 +375,37 @@ function Truck({ t, scene }: { t: number; scene: number }) {
     const g = ref.current;
     if (!g) return;
     let x = 0;
+    let z = 0;
     let rotZ = 0;
     let rotY = 0;
     if (scene === 0) {
-      // cruising along +X, moving left across screen
-      x = 10 - (t / 3.5) * 14;
+      // Cruising FORWARD along -X on the wet road. Slight slipping wobble.
+      const k = t / 3.8;
+      x = 9 - k * 10; // ends near x = -1, where the impact will happen
+      z = Math.sin(t * 6) * 0.08; // subtle hydroplaning drift
+      rotZ = Math.sin(t * 5) * 0.025;
+      rotY = Math.sin(t * 3) * 0.04;
     } else if (scene === 1) {
-      x = -2 + Math.sin(t * 20) * 0.05;
+      // Still rolling forward but braking and slipping harder as the tractor closes.
+      const k = Math.min(1, (t - 3.8) / 2.8);
+      x = -1 - k * 0.5; // small forward creep
+      z = Math.sin(t * 9) * (0.12 + k * 0.18); // pronounced slip
+      rotZ = Math.sin(t * 11) * (0.05 + k * 0.07);
+      rotY = -k * 0.12 + Math.sin(t * 4) * 0.06; // begins to skid sideways
     } else if (scene >= 2) {
-      // after crash: skewed and stopped
+      // Instant impact: skewed and stopped exactly where the tractor hit it.
       x = -1.5;
-      rotY = -0.25;
-      rotZ = 0.05;
+      z = 0.2;
+      rotY = -0.3;
+      rotZ = 0.08;
       if (scene === 2) {
-        const shake = Math.sin(t * 80) * 0.08;
+        const shake = Math.sin(t * 80) * 0.1;
         x += shake;
+        z += Math.cos(t * 70) * 0.08;
       }
     }
     g.position.x = x;
+    g.position.z = z;
     g.rotation.y = rotY;
     g.rotation.z = rotZ;
 
@@ -421,10 +518,10 @@ function Tractor({ t, scene }: { t: number; scene: number }) {
     }
     g.visible = true;
     if (scene === 1) {
-      // swerves in from far +X behind the truck and crosses lane
-      const k = Math.min(1, (t - 3.5) / 3.0);
-      g.position.set(12 - k * 14, 0.8, -3 + k * 3);
-      g.rotation.y = Math.PI + k * 0.6;
+      // Swerves in fast from far +X and SLAMS into the truck right at scene end.
+      const k = Math.min(1, (t - 3.8) / 2.8);
+      g.position.set(12 - k * 13.5, 0.8, -3 + k * 3);
+      g.rotation.y = Math.PI + k * 0.7;
     } else {
       // wrecked, tilted, just past the truck
       g.position.set(2.5, 0.7, -1);
