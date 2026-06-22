@@ -308,9 +308,6 @@ class AudioManager {
       // Human chatter is scheduled on demand inside update()
       src.nextChatterAt = 0;
     }
-      // Human chatter is scheduled on demand inside update()
-      src.nextChatterAt = 0;
-    }
 
     this.sources.set(id, src);
     return src;
