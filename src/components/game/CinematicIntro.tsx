@@ -52,6 +52,36 @@ export function CinematicIntro({ onDone }: Props) {
   const scene = SCENES.find((s) => t < s.until)?.id ?? SCENES.length - 1;
   const skin = findSkin("classic");
 
+  // Voiceover: speak each scene's narration line when the scene changes.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const text = NARRATION[scene];
+    if (!text) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 0.9;
+      u.volume = 1;
+      // Prefer a deeper English voice when available.
+      const voices = window.speechSynthesis.getVoices();
+      const pick =
+        voices.find((v) => /en[-_]?(US|GB)/i.test(v.lang) && /male|daniel|fred|alex/i.test(v.name)) ??
+        voices.find((v) => v.lang?.startsWith("en"));
+      if (pick) u.voice = pick;
+      window.speechSynthesis.speak(u);
+    } catch {
+      // Speech synthesis blocked in some embedded previews; silent fallback.
+    }
+  }, [scene]);
+
+  // Stop any narration if the user skips or the cinematic unmounts.
+  useEffect(() => {
+    return () => {
+      try { window.speechSynthesis?.cancel(); } catch { /* */ }
+    };
+  }, []);
+
   // Speech bubble visibility / text per scene
   const bubble =
     scene === 4
