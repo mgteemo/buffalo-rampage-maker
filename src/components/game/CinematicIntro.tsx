@@ -7,14 +7,25 @@ type Props = { onDone: () => void };
 
 // Scene timings (seconds, cumulative)
 const SCENES = [
-  { id: 0, until: 3.5, label: "A peaceful highway at dawn..." },
-  { id: 1, until: 6.8, label: "A tractor swerves into the lane!" },
-  { id: 2, until: 9.2, label: "CRASH!" },
-  { id: 3, until: 12.8, label: "The wounded trucker drags himself to the cage..." },
-  { id: 4, until: 17.5, label: "" },
-  { id: 5, until: 21.5, label: "" },
-  { id: 6, until: 24.5, label: "" },
+  { id: 0, until: 3.8, label: "A rainy highway at dawn..." },
+  { id: 1, until: 6.6, label: "A tractor swerves into the lane!" },
+  { id: 2, until: 8.8, label: "CRASH!" },
+  { id: 3, until: 12.4, label: "The wounded trucker drags himself to the cage..." },
+  { id: 4, until: 17.0, label: "" },
+  { id: 5, until: 21.0, label: "" },
+  { id: 6, until: 24.0, label: "" },
 ];
+
+// Narration spoken at the start of each scene (browser SpeechSynthesis).
+const NARRATION: Record<number, string> = {
+  0: "On a quiet, rainy highway at dawn, a kind trucker drives home.",
+  1: "Out of the rain, a tractor swerves into his lane.",
+  2: "Crash!",
+  3: "Wounded, he drags himself to the cage.",
+  4: "Run free, buddy. Don't let them hurt you.",
+  5: "Tell my wife and son... that I love them.",
+  6: "Rest in peace, kind trucker.",
+};
 const TOTAL = SCENES[SCENES.length - 1].until;
 
 export function CinematicIntro({ onDone }: Props) {
