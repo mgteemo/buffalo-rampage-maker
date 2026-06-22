@@ -1,6 +1,6 @@
 // Level / Timer / Score system.
 // Lightweight observer pattern (no React state inside the R3F loop).
-import { stats, subscribeStats, addCoins, emitEvent } from "./gameState";
+import { stats, subscribeStats, addCoins, emitEvent, reportBest } from "./gameState";
 
 export type LevelState = {
   level: number;
