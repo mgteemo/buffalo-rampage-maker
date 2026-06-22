@@ -329,29 +329,70 @@ class AudioManager {
       (p as unknown as { setPosition: (x: number, y: number, z: number) => void }).setPosition?.(x, y, z);
     }
 
-    if (s.kind === "tractor" || s.kind === "harvester" || s.kind === "car") {
+    if (s.kind === "tractor" || s.kind === "harvester") {
       // Idle hum baseline + rev when buffalo near (alarmed engine)
-      const idle = s.kind === "car" ? 0.35 : 0.45;
+      const idle = 0.45;
       const target = idle + proximity * 0.55;
       s.gain.gain.setTargetAtTime(target, t, 0.08);
       // Rev pitch up as proximity rises
       if (s.osc) {
-        const base = s.kind === "harvester" ? 55 : s.kind === "tractor" ? 75 : 130;
+        const base = s.kind === "harvester" ? 55 : 75;
         s.osc.frequency.setTargetAtTime(base * (1 + proximity * 0.9), t, 0.08);
       }
       if (s.osc2) {
-        const base = (s.kind === "harvester" ? 55 : s.kind === "tractor" ? 75 : 130) * 0.5;
+        const base = (s.kind === "harvester" ? 55 : 75) * 0.5;
         s.osc2.frequency.setTargetAtTime(base * (1 + proximity * 0.9), t, 0.08);
       }
       if (s.lfo) {
-        const baseLfo = s.kind === "harvester" ? 4 : s.kind === "tractor" ? 7 : 12;
+        const baseLfo = s.kind === "harvester" ? 4 : 7;
         s.lfo.frequency.setTargetAtTime(baseLfo * (1 + proximity * 1.5), t, 0.08);
       }
-      // Movement velocity for Doppler
-      if (p.orientationX) {
-        // not strictly required but keeps panners pointing forward
-      }
       void vx; void vz;
+    } else if (s.kind === "car") {
+      // Cars HONK instead of humming. Closer buffalo => more frantic honks.
+      const now = performance.now() / 1000;
+      if (s.nextChatterAt === undefined) s.nextChatterAt = 0;
+      // Silent baseline channel (each honk routes through the panner directly).
+      s.gain.gain.setTargetAtTime(0, t, 0.1);
+      if (now >= s.nextChatterAt) {
+        // Frantic honking only when the buffalo is close-ish.
+        const frantic = proximity > 0.25;
+        const dur = frantic ? 0.18 : 0.32;
+        const f1 = 380 + Math.random() * 60; // root
+        const f2 = f1 * 1.25;                // a 5th-ish above for that 2-tone car horn
+        // Two stacked square tones with a touch of detune = classic horn timbre.
+        const mk = (freq: number, mix: number) => {
+          const o = this.ctx!.createOscillator();
+          o.type = "square";
+          o.frequency.value = freq;
+          o.detune.value = (Math.random() - 0.5) * 8;
+          const og = this.ctx!.createGain();
+          og.gain.setValueAtTime(0.0001, t);
+          og.gain.exponentialRampToValueAtTime(mix * (0.55 + proximity * 0.35), t + 0.02);
+          og.gain.setValueAtTime(mix * (0.55 + proximity * 0.35), t + dur - 0.04);
+          og.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(og).connect(s.panner);
+          o.start(t);
+          o.stop(t + dur + 0.05);
+        };
+        mk(f1, 0.7);
+        mk(f2, 0.5);
+        // Occasional double-tap honk when frantic.
+        if (frantic && Math.random() < 0.5) {
+          const t2 = t + dur + 0.08;
+          const o = this.ctx!.createOscillator();
+          o.type = "square";
+          o.frequency.value = f1;
+          const og = this.ctx!.createGain();
+          og.gain.setValueAtTime(0.0001, t2);
+          og.gain.exponentialRampToValueAtTime(0.6, t2 + 0.02);
+          og.gain.exponentialRampToValueAtTime(0.0001, t2 + dur);
+          o.connect(og).connect(s.panner);
+          o.start(t2);
+          o.stop(t2 + dur + 0.05);
+        }
+        s.nextChatterAt = now + (frantic ? 0.5 + Math.random() * 0.5 : 2.2 + Math.random() * 2.5);
+      }
     } else if (s.kind === "human") {
       // Schedule chatter / scream blips. Closer => screams (higher pitch, faster).
       const now = performance.now() / 1000;
