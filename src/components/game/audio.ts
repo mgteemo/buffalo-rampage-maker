@@ -268,9 +268,9 @@ class AudioManager {
 
     const src: EntitySource = { id, kind, panner, gain };
 
-    if (kind === "tractor" || kind === "harvester" || kind === "car") {
+    if (kind === "tractor" || kind === "harvester") {
       // Engine: sawtooth + sub + AM via LFO + bandpass filter colour
-      const baseFreq = kind === "harvester" ? 55 : kind === "tractor" ? 75 : 130;
+      const baseFreq = kind === "harvester" ? 55 : 75;
       const osc = ctx.createOscillator();
       osc.type = "sawtooth";
       osc.frequency.value = baseFreq;
@@ -279,13 +279,13 @@ class AudioManager {
       osc2.frequency.value = baseFreq * 0.5;
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.value = kind === "car" ? 1400 : 700;
+      filter.frequency.value = 700;
       filter.Q.value = 4;
       const lfo = ctx.createOscillator();
       lfo.type = "sine";
-      lfo.frequency.value = kind === "harvester" ? 4 : kind === "tractor" ? 7 : 12;
+      lfo.frequency.value = kind === "harvester" ? 4 : 7;
       const lfoGain = ctx.createGain();
-      lfoGain.gain.value = kind === "car" ? 0.25 : 0.45;
+      lfoGain.gain.value = 0.45;
       // AM modulation: LFO modulates a second gain stage
       const amp = ctx.createGain();
       amp.gain.value = 0.5;
@@ -301,7 +301,13 @@ class AudioManager {
       src.lfo = lfo;
       src.lfoGain = lfoGain;
       src.filter = filter;
+    } else if (kind === "car") {
+      // Cars no longer hum — they HONK. Horn beeps are scheduled in updateSource().
+      src.nextChatterAt = 0;
     } else if (kind === "human") {
+      // Human chatter is scheduled on demand inside update()
+      src.nextChatterAt = 0;
+    }
       // Human chatter is scheduled on demand inside update()
       src.nextChatterAt = 0;
     }
