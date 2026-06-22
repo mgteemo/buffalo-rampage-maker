@@ -85,11 +85,20 @@ function savePlayer() {
         coins: player.coins,
         ownedSkins: Array.from(player.ownedSkins),
         equippedSkin: player.equippedSkin,
+        bestLevel: player.bestLevel,
+        bestScore: player.bestScore,
       } as PersistedPlayer),
     );
   } catch { /* */ }
 }
 function notifyPlayer() { playerListeners.forEach((l) => l()); }
+
+export function reportBest(currentLevel: number, currentScore: number) {
+  let changed = false;
+  if (currentLevel > player.bestLevel) { player.bestLevel = currentLevel; changed = true; }
+  if (currentScore > player.bestScore) { player.bestScore = currentScore; changed = true; }
+  if (changed) { savePlayer(); notifyPlayer(); }
+}
 
 export function addCoins(n: number, reason?: string) {
   if (n <= 0) return;
