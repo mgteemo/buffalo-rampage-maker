@@ -518,10 +518,10 @@ function Tractor({ t, scene }: { t: number; scene: number }) {
     }
     g.visible = true;
     if (scene === 1) {
-      // swerves in from far +X behind the truck and crosses lane
-      const k = Math.min(1, (t - 3.5) / 3.0);
-      g.position.set(12 - k * 14, 0.8, -3 + k * 3);
-      g.rotation.y = Math.PI + k * 0.6;
+      // Swerves in fast from far +X and SLAMS into the truck right at scene end.
+      const k = Math.min(1, (t - 3.8) / 2.8);
+      g.position.set(12 - k * 13.5, 0.8, -3 + k * 3);
+      g.rotation.y = Math.PI + k * 0.7;
     } else {
       // wrecked, tilted, just past the truck
       g.position.set(2.5, 0.7, -1);
