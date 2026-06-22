@@ -97,8 +97,8 @@ export function CinematicIntro({ onDone }: Props) {
         camera={{ position: [0, 4, 14], fov: 50 }}
         gl={{ antialias: true }}
       >
-        <color attach="background" args={["#1a1410"]} />
-        <fog attach="fog" args={["#1a1410", 25, 70]} />
+        <color attach="background" args={["#3b4450"]} />
+        <fog attach="fog" args={["#3b4450", 18, 55]} />
         <Suspense fallback={null}>
           <Scene t={t} scene={scene} skin={skin} />
         </Suspense>
