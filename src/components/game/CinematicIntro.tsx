@@ -375,24 +375,37 @@ function Truck({ t, scene }: { t: number; scene: number }) {
     const g = ref.current;
     if (!g) return;
     let x = 0;
+    let z = 0;
     let rotZ = 0;
     let rotY = 0;
     if (scene === 0) {
-      // cruising along +X, moving left across screen
-      x = 10 - (t / 3.5) * 14;
+      // Cruising FORWARD along -X on the wet road. Slight slipping wobble.
+      const k = t / 3.8;
+      x = 9 - k * 10; // ends near x = -1, where the impact will happen
+      z = Math.sin(t * 6) * 0.08; // subtle hydroplaning drift
+      rotZ = Math.sin(t * 5) * 0.025;
+      rotY = Math.sin(t * 3) * 0.04;
     } else if (scene === 1) {
-      x = -2 + Math.sin(t * 20) * 0.05;
+      // Still rolling forward but braking and slipping harder as the tractor closes.
+      const k = Math.min(1, (t - 3.8) / 2.8);
+      x = -1 - k * 0.5; // small forward creep
+      z = Math.sin(t * 9) * (0.12 + k * 0.18); // pronounced slip
+      rotZ = Math.sin(t * 11) * (0.05 + k * 0.07);
+      rotY = -k * 0.12 + Math.sin(t * 4) * 0.06; // begins to skid sideways
     } else if (scene >= 2) {
-      // after crash: skewed and stopped
+      // Instant impact: skewed and stopped exactly where the tractor hit it.
       x = -1.5;
-      rotY = -0.25;
-      rotZ = 0.05;
+      z = 0.2;
+      rotY = -0.3;
+      rotZ = 0.08;
       if (scene === 2) {
-        const shake = Math.sin(t * 80) * 0.08;
+        const shake = Math.sin(t * 80) * 0.1;
         x += shake;
+        z += Math.cos(t * 70) * 0.08;
       }
     }
     g.position.x = x;
+    g.position.z = z;
     g.rotation.y = rotY;
     g.rotation.z = rotZ;
 
