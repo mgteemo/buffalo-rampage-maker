@@ -956,11 +956,11 @@ export function Countryside() {
             <meshStandardMaterial color={f.color} roughness={1} />
           </mesh>
           {/* furrow stripes */}
-          {Array.from({ length: 9 }).map((_, k) => (
+          {Array.from({ length: 5 }).map((_, k) => (
             <mesh
               key={k}
               rotation={[-Math.PI / 2, 0, 0]}
-              position={[-12 + k * 3, 0.04, 0]}
+              position={[-10 + k * 5, 0.04, 0]}
             >
               <planeGeometry args={[0.3, 17]} />
               <meshStandardMaterial color="#3a2a14" />
