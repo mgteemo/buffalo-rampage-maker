@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Force-enable Nitro's deploy plugin with the Vercel preset so a self-hosted
+  // build (outside Lovable's sandbox) emits Vercel-compatible Build Output
+  // (.vercel/output with a server function). Without this, Nitro is skipped
+  // outside Lovable and Vercel has no SSR function to run, breaking the deploy.
+  nitro: { preset: "vercel" },
 });
