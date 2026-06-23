@@ -114,7 +114,7 @@ export function Game() {
     <div className="fixed inset-0 overflow-hidden bg-sky-300 select-none landscape-game">
       <Canvas
         camera={{ fov: 60, near: 0.1, far: 500, position: [0, 6, -10] }}
-        dpr={[1, 1.5]}
+        dpr={[1, 1.25]}
         gl={{ powerPreference: "high-performance", antialias: false }}
       >
         <Sky sunPosition={[100, 50, 100]} turbidity={3} rayleigh={1.2} mieCoefficient={0.005} mieDirectionalG={0.8} />

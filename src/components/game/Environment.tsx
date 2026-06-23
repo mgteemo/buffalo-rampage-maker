@@ -34,7 +34,7 @@ function inAttackRange(buf: THREE.Group, ox: number, oz: number, extraR = 0) {
 
 // Realistic rice plants: instanced stems + grain heads, with crops that fold over when trampled.
 export function Crops({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
-  const COUNT = 360;
+  const COUNT = 220;
   const stemRef = useRef<THREE.InstancedMesh>(null!);
   const grainRef = useRef<THREE.InstancedMesh>(null!);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -408,7 +408,7 @@ export function Ground() {
 // Realistic grass: many thin blades clustered in tufts, with 3 color shades
 // for natural variation. Uses a tall thin tapered cone as the blade primitive.
 export function GrassTufts() {
-  const PER_SHADE = 700;
+  const PER_SHADE = 320;
   const shades = useMemo(
     () => [
       { color: "#5d8a2a", h: 0.55, r: 0.022 },
@@ -474,23 +474,20 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
     const blocks: { cx: number; cz: number }[] = [];
-    // Dense township blocks near origin (the city)
-    for (let bx = -2; bx <= 2; bx++) {
-      for (let bz = -2; bz <= 2; bz++) {
-        // skip blocks the highways pass through
-        if (bx === 0 && Math.abs(bz) <= 0) continue;
-        blocks.push({ cx: bx * 36, cz: bz * 36 });
+    // Township blocks near origin (the city) — keep it lean for perf
+    for (let bx = -1; bx <= 1; bx++) {
+      for (let bz = -1; bz <= 1; bz++) {
+        if (bx === 0 && bz === 0) continue;
+        blocks.push({ cx: bx * 38, cz: bz * 38 });
       }
     }
-    // Outlying farmhouse clusters spread across the countryside
+    // A few outlying farmhouse clusters
     [
-      { cx: -120, cz: -60 }, { cx: -150, cz: 70 },
-      { cx: 120, cz: 60 }, { cx: 160, cz: -80 },
-      { cx: -80, cz: -150 }, { cx: 90, cz: 150 },
-      { cx: -180, cz: 0 }, { cx: 180, cz: 0 },
+      { cx: -130, cz: 70 }, { cx: 140, cz: -70 },
+      { cx: -160, cz: -40 }, { cx: 150, cz: 80 },
     ].forEach((b) => blocks.push(b));
     blocks.forEach((b, bi) => {
-      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 5;
+      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 3;
       for (let i = 0; i < count; i++) {
         const p = palette[(bi + i) % palette.length];
         const w = 4 + Math.random() * 3;
@@ -518,9 +515,9 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
 
   const lamps = useMemo(() => {
     const arr: { x: number; z: number }[] = [];
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      arr.push({ x: Math.cos(a) * 18, z: Math.sin(a) * 18 });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      arr.push({ x: Math.cos(a) * 20, z: Math.sin(a) * 20 });
     }
     return arr;
   }, []);
@@ -634,12 +631,12 @@ type Tree = {
 export function Trees({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
   const trees = useMemo<Tree[]>(() => {
     const arr: Tree[] = [];
-    for (let i = 0; i < 160; i++) {
+    for (let i = 0; i < 70; i++) {
       // Spread across the whole countryside, but keep clear of the highways.
       let x = 0, z = 0;
       for (let tries = 0; tries < 6; tries++) {
-        x = (Math.random() - 0.5) * 440;
-        z = (Math.random() - 0.5) * 440;
+        x = (Math.random() - 0.5) * 420;
+        z = (Math.random() - 0.5) * 420;
         if (Math.abs(z) > 9 || Math.abs(x) > ROAD_LEN / 2 - 4) {
           if (Math.abs(x) > 9 || Math.abs(z) > CROSS_ROAD_LEN / 2 - 4) break;
         }
@@ -740,9 +737,9 @@ export function Mountains() {
   const peaks = useMemo(() => {
     const arr: { x: number; z: number; h: number; r: number; c: string }[] = [];
     const colors = ["#6b7a8a", "#5a6a78", "#7a8a99", "#4d5a68"];
-    for (let i = 0; i < 18; i++) {
-      const ang = (i / 18) * Math.PI * 2 + Math.random() * 0.1;
-      const dist = 140 + Math.random() * 30;
+    for (let i = 0; i < 10; i++) {
+      const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.1;
+      const dist = 320 + Math.random() * 40;
       arr.push({
         x: Math.cos(ang) * dist,
         z: Math.sin(ang) * dist,
@@ -775,7 +772,7 @@ export function Clouds() {
   const groupRef = useRef<THREE.Group>(null!);
   const clouds = useMemo(() => {
     const arr: { x: number; y: number; z: number; s: number }[] = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 10; i++) {
       arr.push({
         x: (Math.random() - 0.5) * 240,
         y: 35 + Math.random() * 15,
@@ -880,8 +877,8 @@ export function Countryside() {
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
     // Roadside homes along the main highway, alternating sides.
-    for (let i = 0; i < 26; i++) {
-      const x = -ROAD_LEN / 2 + 30 + i * 18 + (Math.random() - 0.5) * 4;
+    for (let i = 0; i < 14; i++) {
+      const x = -ROAD_LEN / 2 + 40 + i * 34 + (Math.random() - 0.5) * 4;
       if (Math.abs(x) < 60) continue; // leave room for the township near origin
       const side = i % 2 === 0 ? 1 : -1;
       const z = side * (16 + Math.random() * 8);
@@ -895,14 +892,14 @@ export function Countryside() {
     // Small green parks with a few trees each.
     const arr: { x: number; z: number; trees: { x: number; z: number; s: number }[] }[] = [];
     const spots = [
-      { x: -180, z: 60 }, { x: -100, z: -70 }, { x: 70, z: -55 },
-      { x: 150, z: 50 }, { x: -50, z: 100 }, { x: 110, z: 130 },
-      { x: -150, z: -140 }, { x: 200, z: -150 },
+      { x: -160, z: 60 }, { x: 100, z: -55 },
+      { x: -60, z: 110 }, { x: 140, z: 120 },
+      { x: -170, z: -130 },
     ];
     spots.forEach((s) => {
-      const trees = Array.from({ length: 5 }).map(() => ({
-        x: (Math.random() - 0.5) * 18,
-        z: (Math.random() - 0.5) * 18,
+      const trees = Array.from({ length: 3 }).map(() => ({
+        x: (Math.random() - 0.5) * 16,
+        z: (Math.random() - 0.5) * 16,
         s: 0.7 + Math.random() * 0.6,
       }));
       arr.push({ x: s.x, z: s.z, trees });
@@ -914,8 +911,8 @@ export function Countryside() {
     // Tilled farm plots near outlying farmhouses.
     const arr: { x: number; z: number; color: string }[] = [];
     const spots = [
-      { x: -130, z: -30 }, { x: -160, z: 100 }, { x: 130, z: 90 },
-      { x: 170, z: -50 }, { x: -60, z: -170 }, { x: 80, z: 170 },
+      { x: -130, z: -30 }, { x: 130, z: 90 },
+      { x: 170, z: -50 }, { x: -60, z: -170 },
     ];
     const colors = ["#8a6a32", "#a37c3a", "#6b5a2a", "#9c8240"];
     spots.forEach((s, i) => arr.push({ ...s, color: colors[i % colors.length] }));
@@ -959,11 +956,11 @@ export function Countryside() {
             <meshStandardMaterial color={f.color} roughness={1} />
           </mesh>
           {/* furrow stripes */}
-          {Array.from({ length: 9 }).map((_, k) => (
+          {Array.from({ length: 5 }).map((_, k) => (
             <mesh
               key={k}
               rotation={[-Math.PI / 2, 0, 0]}
-              position={[-12 + k * 3, 0.04, 0]}
+              position={[-10 + k * 5, 0.04, 0]}
             >
               <planeGeometry args={[0.3, 17]} />
               <meshStandardMaterial color="#3a2a14" />
