@@ -121,7 +121,7 @@ export function Game() {
         <ambientLight intensity={0.65} color="#fff5e0" />
         <hemisphereLight args={["#bfe3ff", "#5a4a2a", 0.45]} />
         <directionalLight position={[40, 60, 20]} intensity={1.6} color="#fff1d0" />
-        <fog attach="fog" args={["#dbeaf2", 60, 220]} />
+        <fog attach="fog" args={["#dbeaf2", 120, 480]} />
 
         <Mountains />
         <Clouds />
