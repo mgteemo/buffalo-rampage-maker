@@ -737,9 +737,9 @@ export function Mountains() {
   const peaks = useMemo(() => {
     const arr: { x: number; z: number; h: number; r: number; c: string }[] = [];
     const colors = ["#6b7a8a", "#5a6a78", "#7a8a99", "#4d5a68"];
-    for (let i = 0; i < 18; i++) {
-      const ang = (i / 18) * Math.PI * 2 + Math.random() * 0.1;
-      const dist = 140 + Math.random() * 30;
+    for (let i = 0; i < 10; i++) {
+      const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.1;
+      const dist = 320 + Math.random() * 40;
       arr.push({
         x: Math.cos(ang) * dist,
         z: Math.sin(ang) * dist,
@@ -772,7 +772,7 @@ export function Clouds() {
   const groupRef = useRef<THREE.Group>(null!);
   const clouds = useMemo(() => {
     const arr: { x: number; y: number; z: number; s: number }[] = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 10; i++) {
       arr.push({
         x: (Math.random() - 0.5) * 240,
         y: 35 + Math.random() * 15,
