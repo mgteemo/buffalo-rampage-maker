@@ -877,8 +877,8 @@ export function Countryside() {
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
     // Roadside homes along the main highway, alternating sides.
-    for (let i = 0; i < 26; i++) {
-      const x = -ROAD_LEN / 2 + 30 + i * 18 + (Math.random() - 0.5) * 4;
+    for (let i = 0; i < 14; i++) {
+      const x = -ROAD_LEN / 2 + 40 + i * 34 + (Math.random() - 0.5) * 4;
       if (Math.abs(x) < 60) continue; // leave room for the township near origin
       const side = i % 2 === 0 ? 1 : -1;
       const z = side * (16 + Math.random() * 8);
@@ -892,14 +892,14 @@ export function Countryside() {
     // Small green parks with a few trees each.
     const arr: { x: number; z: number; trees: { x: number; z: number; s: number }[] }[] = [];
     const spots = [
-      { x: -180, z: 60 }, { x: -100, z: -70 }, { x: 70, z: -55 },
-      { x: 150, z: 50 }, { x: -50, z: 100 }, { x: 110, z: 130 },
-      { x: -150, z: -140 }, { x: 200, z: -150 },
+      { x: -160, z: 60 }, { x: 100, z: -55 },
+      { x: -60, z: 110 }, { x: 140, z: 120 },
+      { x: -170, z: -130 },
     ];
     spots.forEach((s) => {
-      const trees = Array.from({ length: 5 }).map(() => ({
-        x: (Math.random() - 0.5) * 18,
-        z: (Math.random() - 0.5) * 18,
+      const trees = Array.from({ length: 3 }).map(() => ({
+        x: (Math.random() - 0.5) * 16,
+        z: (Math.random() - 0.5) * 16,
         s: 0.7 + Math.random() * 0.6,
       }));
       arr.push({ x: s.x, z: s.z, trees });
@@ -911,8 +911,8 @@ export function Countryside() {
     // Tilled farm plots near outlying farmhouses.
     const arr: { x: number; z: number; color: string }[] = [];
     const spots = [
-      { x: -130, z: -30 }, { x: -160, z: 100 }, { x: 130, z: 90 },
-      { x: 170, z: -50 }, { x: -60, z: -170 }, { x: 80, z: 170 },
+      { x: -130, z: -30 }, { x: 130, z: 90 },
+      { x: 170, z: -50 }, { x: -60, z: -170 },
     ];
     const colors = ["#8a6a32", "#a37c3a", "#6b5a2a", "#9c8240"];
     spots.forEach((s, i) => arr.push({ ...s, color: colors[i % colors.length] }));
