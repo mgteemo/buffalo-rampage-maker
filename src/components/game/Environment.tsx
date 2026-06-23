@@ -34,7 +34,7 @@ function inAttackRange(buf: THREE.Group, ox: number, oz: number, extraR = 0) {
 
 // Realistic rice plants: instanced stems + grain heads, with crops that fold over when trampled.
 export function Crops({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
-  const COUNT = 360;
+  const COUNT = 220;
   const stemRef = useRef<THREE.InstancedMesh>(null!);
   const grainRef = useRef<THREE.InstancedMesh>(null!);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -408,7 +408,7 @@ export function Ground() {
 // Realistic grass: many thin blades clustered in tufts, with 3 color shades
 // for natural variation. Uses a tall thin tapered cone as the blade primitive.
 export function GrassTufts() {
-  const PER_SHADE = 700;
+  const PER_SHADE = 320;
   const shades = useMemo(
     () => [
       { color: "#5d8a2a", h: 0.55, r: 0.022 },
