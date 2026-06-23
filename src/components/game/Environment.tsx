@@ -474,23 +474,20 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
     const blocks: { cx: number; cz: number }[] = [];
-    // Dense township blocks near origin (the city)
-    for (let bx = -2; bx <= 2; bx++) {
-      for (let bz = -2; bz <= 2; bz++) {
-        // skip blocks the highways pass through
-        if (bx === 0 && Math.abs(bz) <= 0) continue;
-        blocks.push({ cx: bx * 36, cz: bz * 36 });
+    // Township blocks near origin (the city) — keep it lean for perf
+    for (let bx = -1; bx <= 1; bx++) {
+      for (let bz = -1; bz <= 1; bz++) {
+        if (bx === 0 && bz === 0) continue;
+        blocks.push({ cx: bx * 38, cz: bz * 38 });
       }
     }
-    // Outlying farmhouse clusters spread across the countryside
+    // A few outlying farmhouse clusters
     [
-      { cx: -120, cz: -60 }, { cx: -150, cz: 70 },
-      { cx: 120, cz: 60 }, { cx: 160, cz: -80 },
-      { cx: -80, cz: -150 }, { cx: 90, cz: 150 },
-      { cx: -180, cz: 0 }, { cx: 180, cz: 0 },
+      { cx: -130, cz: 70 }, { cx: 140, cz: -70 },
+      { cx: -160, cz: -40 }, { cx: 150, cz: 80 },
     ].forEach((b) => blocks.push(b));
     blocks.forEach((b, bi) => {
-      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 5;
+      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 3;
       for (let i = 0; i < count; i++) {
         const p = palette[(bi + i) % palette.length];
         const w = 4 + Math.random() * 3;
@@ -518,9 +515,9 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
 
   const lamps = useMemo(() => {
     const arr: { x: number; z: number }[] = [];
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      arr.push({ x: Math.cos(a) * 18, z: Math.sin(a) * 18 });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      arr.push({ x: Math.cos(a) * 20, z: Math.sin(a) * 20 });
     }
     return arr;
   }, []);
@@ -634,12 +631,12 @@ type Tree = {
 export function Trees({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
   const trees = useMemo<Tree[]>(() => {
     const arr: Tree[] = [];
-    for (let i = 0; i < 160; i++) {
+    for (let i = 0; i < 70; i++) {
       // Spread across the whole countryside, but keep clear of the highways.
       let x = 0, z = 0;
       for (let tries = 0; tries < 6; tries++) {
-        x = (Math.random() - 0.5) * 440;
-        z = (Math.random() - 0.5) * 440;
+        x = (Math.random() - 0.5) * 420;
+        z = (Math.random() - 0.5) * 420;
         if (Math.abs(z) > 9 || Math.abs(x) > ROAD_LEN / 2 - 4) {
           if (Math.abs(x) > 9 || Math.abs(z) > CROSS_ROAD_LEN / 2 - 4) break;
         }
