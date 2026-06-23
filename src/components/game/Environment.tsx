@@ -428,8 +428,8 @@ export function GrassTufts() {
             if (!m) return;
             for (let i = 0; i < PER_SHADE; i++) {
               // Cluster blades in tufts: pick a tuft center, then jitter.
-              const tx = (Math.random() - 0.5) * 150;
-              const tz = (Math.random() - 0.5) * 150;
+              const tx = (Math.random() - 0.5) * 460;
+              const tz = (Math.random() - 0.5) * 460;
               const jx = (Math.random() - 0.5) * 0.6;
               const jz = (Math.random() - 0.5) * 0.6;
               const scale = 0.7 + Math.random() * 0.7;
@@ -473,23 +473,36 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
       { body: "#b9c9d3", roof: "#2d4a3a" },
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
-    const blocks = [
-      { cx: -30, cz: -30 },
-      { cx: 30, cz: -30 },
-      { cx: -30, cz: 30 },
-      { cx: -55, cz: 20 },
-      { cx: 55, cz: 25 },
-      { cx: 0, cz: -55 },
-    ];
+    const blocks: { cx: number; cz: number }[] = [];
+    // Dense township blocks near origin (the city)
+    for (let bx = -2; bx <= 2; bx++) {
+      for (let bz = -2; bz <= 2; bz++) {
+        // skip blocks the highways pass through
+        if (bx === 0 && Math.abs(bz) <= 0) continue;
+        blocks.push({ cx: bx * 36, cz: bz * 36 });
+      }
+    }
+    // Outlying farmhouse clusters spread across the countryside
+    [
+      { cx: -120, cz: -60 }, { cx: -150, cz: 70 },
+      { cx: 120, cz: 60 }, { cx: 160, cz: -80 },
+      { cx: -80, cz: -150 }, { cx: 90, cz: 150 },
+      { cx: -180, cz: 0 }, { cx: 180, cz: 0 },
+    ].forEach((b) => blocks.push(b));
     blocks.forEach((b, bi) => {
-      for (let i = 0; i < 5; i++) {
+      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 5;
+      for (let i = 0; i < count; i++) {
         const p = palette[(bi + i) % palette.length];
         const w = 4 + Math.random() * 3;
         const d = 4 + Math.random() * 3;
         const h = 3 + Math.random() * 5;
+        const px = b.cx + (Math.random() - 0.5) * 18;
+        const pz = b.cz + (Math.random() - 0.5) * 18;
+        // Don't drop buildings on the road
+        if (Math.abs(pz) < 8 && Math.abs(px) < ROAD_LEN / 2) continue;
+        if (Math.abs(px) < 8 && Math.abs(pz) < CROSS_ROAD_LEN / 2) continue;
         arr.push({
-          x: b.cx + (Math.random() - 0.5) * 18,
-          z: b.cz + (Math.random() - 0.5) * 18,
+          x: px, z: pz,
           w, d, h,
           body: p.body,
           roof: p.roof,
@@ -621,12 +634,18 @@ type Tree = {
 export function Trees({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
   const trees = useMemo<Tree[]>(() => {
     const arr: Tree[] = [];
-    for (let i = 0; i < 36; i++) {
-      const ang = Math.random() * Math.PI * 2;
-      const r = 45 + Math.random() * 45;
+    for (let i = 0; i < 160; i++) {
+      // Spread across the whole countryside, but keep clear of the highways.
+      let x = 0, z = 0;
+      for (let tries = 0; tries < 6; tries++) {
+        x = (Math.random() - 0.5) * 440;
+        z = (Math.random() - 0.5) * 440;
+        if (Math.abs(z) > 9 || Math.abs(x) > ROAD_LEN / 2 - 4) {
+          if (Math.abs(x) > 9 || Math.abs(z) > CROSS_ROAD_LEN / 2 - 4) break;
+        }
+      }
       arr.push({
-        x: Math.cos(ang) * r,
-        z: Math.sin(ang) * r,
+        x, z,
         s: 0.8 + Math.random() * 0.8,
         fallen: false,
         fallProgress: 0,
