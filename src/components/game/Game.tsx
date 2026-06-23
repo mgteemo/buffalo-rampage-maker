@@ -13,6 +13,7 @@ import {
   Clouds,
   GrassTufts,
   Township,
+  Countryside,
 } from "./Environment";
 import { Joystick, type JoystickVec } from "./Joystick";
 import { input, stats, subscribeStats, subscribeEvents, player, subscribePlayer, buySkin, equipSkin, triggerAttack } from "./gameState";
@@ -127,6 +128,7 @@ export function Game() {
 
         <Ground />
         <GrassTufts />
+        <Countryside />
         <Trees buffaloRef={buffaloRef} />
         <Township buffaloRef={buffaloRef} />
         <Crops buffaloRef={buffaloRef} />
