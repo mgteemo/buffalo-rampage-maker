@@ -866,3 +866,134 @@ export function RaceWaypoint({
     </group>
   );
 }
+
+// ============= Countryside: parks, farms, country homes along the highway =============
+// Static visual decoration spread across the larger map to make it feel alive.
+// Kept simple/no-collision to avoid frame cost; players can drive through parks.
+export function Countryside() {
+  const homes = useMemo(() => {
+    const arr: { x: number; z: number; rot: number; body: string; roof: string }[] = [];
+    const palette = [
+      { body: "#e8c39a", roof: "#9b3a2a" },
+      { body: "#f3e3c1", roof: "#3a5a78" },
+      { body: "#d39a72", roof: "#5b2f1f" },
+      { body: "#ead9b6", roof: "#7a3a2a" },
+    ];
+    // Roadside homes along the main highway, alternating sides.
+    for (let i = 0; i < 26; i++) {
+      const x = -ROAD_LEN / 2 + 30 + i * 18 + (Math.random() - 0.5) * 4;
+      if (Math.abs(x) < 60) continue; // leave room for the township near origin
+      const side = i % 2 === 0 ? 1 : -1;
+      const z = side * (16 + Math.random() * 8);
+      const p = palette[i % palette.length];
+      arr.push({ x, z, rot: side > 0 ? Math.PI : 0, body: p.body, roof: p.roof });
+    }
+    return arr;
+  }, []);
+
+  const parks = useMemo(() => {
+    // Small green parks with a few trees each.
+    const arr: { x: number; z: number; trees: { x: number; z: number; s: number }[] }[] = [];
+    const spots = [
+      { x: -180, z: 60 }, { x: -100, z: -70 }, { x: 70, z: -55 },
+      { x: 150, z: 50 }, { x: -50, z: 100 }, { x: 110, z: 130 },
+      { x: -150, z: -140 }, { x: 200, z: -150 },
+    ];
+    spots.forEach((s) => {
+      const trees = Array.from({ length: 5 }).map(() => ({
+        x: (Math.random() - 0.5) * 18,
+        z: (Math.random() - 0.5) * 18,
+        s: 0.7 + Math.random() * 0.6,
+      }));
+      arr.push({ x: s.x, z: s.z, trees });
+    });
+    return arr;
+  }, []);
+
+  const farms = useMemo(() => {
+    // Tilled farm plots near outlying farmhouses.
+    const arr: { x: number; z: number; color: string }[] = [];
+    const spots = [
+      { x: -130, z: -30 }, { x: -160, z: 100 }, { x: 130, z: 90 },
+      { x: 170, z: -50 }, { x: -60, z: -170 }, { x: 80, z: 170 },
+    ];
+    const colors = ["#8a6a32", "#a37c3a", "#6b5a2a", "#9c8240"];
+    spots.forEach((s, i) => arr.push({ ...s, color: colors[i % colors.length] }));
+    return arr;
+  }, []);
+
+  return (
+    <>
+      {/* Park lawns with trees */}
+      {parks.map((p, i) => (
+        <group key={`park-${i}`} position={[p.x, 0, p.z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+            <planeGeometry args={[22, 22]} />
+            <meshStandardMaterial color="#4f8a3a" roughness={0.9} />
+          </mesh>
+          {/* park bench */}
+          <mesh position={[0, 0.4, 0]} castShadow>
+            <boxGeometry args={[1.6, 0.15, 0.4]} />
+            <meshStandardMaterial color="#6b3a1f" />
+          </mesh>
+          {p.trees.map((t, ti) => (
+            <group key={ti} position={[t.x, 0, t.z]} scale={[t.s, t.s, t.s]}>
+              <mesh castShadow position={[0, 1.0, 0]}>
+                <cylinderGeometry args={[0.2, 0.3, 2.0, 6]} />
+                <meshStandardMaterial color="#6b4423" />
+              </mesh>
+              <mesh castShadow position={[0, 2.6, 0]}>
+                <sphereGeometry args={[1.2, 10, 8]} />
+                <meshStandardMaterial color="#3f7a2a" />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      ))}
+
+      {/* Farm plots */}
+      {farms.map((f, i) => (
+        <group key={`farm-${i}`} position={[f.x, 0, f.z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+            <planeGeometry args={[26, 18]} />
+            <meshStandardMaterial color={f.color} roughness={1} />
+          </mesh>
+          {/* furrow stripes */}
+          {Array.from({ length: 9 }).map((_, k) => (
+            <mesh
+              key={k}
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[-12 + k * 3, 0.04, 0]}
+            >
+              <planeGeometry args={[0.3, 17]} />
+              <meshStandardMaterial color="#3a2a14" />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* Roadside country homes */}
+      {homes.map((h, i) => (
+        <group key={`home-${i}`} position={[h.x, 0, h.z]} rotation={[0, h.rot, 0]}>
+          <mesh castShadow receiveShadow position={[0, 1.7, 0]}>
+            <boxGeometry args={[5, 3.4, 4.5]} />
+            <meshStandardMaterial color={h.body} roughness={0.9} />
+          </mesh>
+          <mesh castShadow position={[0, 4.0, 0]} rotation={[0, Math.PI / 4, 0]}>
+            <coneGeometry args={[3.8, 1.8, 4]} />
+            <meshStandardMaterial color={h.roof} roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 1.0, 2.26]}>
+            <planeGeometry args={[1, 1.8]} />
+            <meshStandardMaterial color="#3a2418" />
+          </mesh>
+          {/* mailbox by the road */}
+          <mesh castShadow position={[0, 0.8, 6]}>
+            <boxGeometry args={[0.4, 0.3, 0.6]} />
+            <meshStandardMaterial color="#b03a2e" />
+          </mesh>
+        </group>
+      ))}
+    </>
+  );
+}
