@@ -311,12 +311,14 @@ function HarvesterMesh() {
   );
 }
 
-export const ROAD_LEN = 160;
+export const ROAD_LEN = 540;
 export const ROAD_WIDTH = 12;
 export const ROAD_Z = 0;
+export const CROSS_ROAD_LEN = 540;
+export const CROSS_ROAD_X = 0;
 
 export function Ground() {
-  const BOUND = 80;
+  const BOUND = 240;
   const dashes = useMemo(() => {
     const arr: { x: number }[] = [];
     const step = 4;
@@ -325,28 +327,45 @@ export function Ground() {
     }
     return arr;
   }, []);
+  const crossDashes = useMemo(() => {
+    const arr: { z: number }[] = [];
+    const step = 4;
+    for (let z = -CROSS_ROAD_LEN / 2 + 2; z <= CROSS_ROAD_LEN / 2 - 2; z += step) {
+      arr.push({ z });
+    }
+    return arr;
+  }, []);
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[400, 400]} />
+        <planeGeometry args={[1400, 1400]} />
         <meshStandardMaterial color="#6b4a2b" roughness={1} />
       </mesh>
-      {Array.from({ length: 16 }).map((_, i) => {
-        const x = ((i % 4) - 1.5) * 28;
-        const z = (Math.floor(i / 4) - 1.5) * 28;
+      {/* Patchwork of grass/farm fields spread across the larger map */}
+      {Array.from({ length: 64 }).map((_, i) => {
+        const gx = (i % 8) - 3.5;
+        const gz = Math.floor(i / 8) - 3.5;
+        const x = gx * 56;
+        const z = gz * 56;
+        const isFarm = (gx + gz) % 2 === 0;
         return (
           <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]} receiveShadow>
-            <planeGeometry args={[24, 24]} />
-            <meshStandardMaterial color="#4a6b3a" roughness={0.8} />
+            <planeGeometry args={[48, 48]} />
+            <meshStandardMaterial color={isFarm ? "#7d6232" : "#4a6b3a"} roughness={0.9} />
           </mesh>
         );
       })}
-      {/* Wide straight asphalt road along the X axis */}
+      {/* Main east-west highway */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, ROAD_Z]} receiveShadow>
         <planeGeometry args={[ROAD_LEN, ROAD_WIDTH]} />
         <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
       </mesh>
-      {/* White lane edges */}
+      {/* Cross road through the township */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CROSS_ROAD_X, 0.03, 0]} receiveShadow>
+        <planeGeometry args={[ROAD_WIDTH, CROSS_ROAD_LEN]} />
+        <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
+      </mesh>
+      {/* White lane edges on main road */}
       {[-1, 1].map((s) => (
         <mesh
           key={`edge-${s}`}
@@ -357,10 +376,17 @@ export function Ground() {
           <meshBasicMaterial color="#f5f5f5" />
         </mesh>
       ))}
-      {/* Yellow dashed center line */}
+      {/* Yellow dashed center line on main road */}
       {dashes.map((d, i) => (
         <mesh key={`dash-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[d.x, 0.05, ROAD_Z]}>
           <planeGeometry args={[2.2, 0.28]} />
+          <meshBasicMaterial color="#f4c430" />
+        </mesh>
+      ))}
+      {/* Yellow dashed center line on cross road */}
+      {crossDashes.map((d, i) => (
+        <mesh key={`cdash-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[CROSS_ROAD_X, 0.05, d.z]}>
+          <planeGeometry args={[0.28, 2.2]} />
           <meshBasicMaterial color="#f4c430" />
         </mesh>
       ))}
