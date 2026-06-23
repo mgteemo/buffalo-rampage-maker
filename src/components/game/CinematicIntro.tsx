@@ -411,6 +411,7 @@ function Truck({ t, scene }: { t: number; scene: number }) {
         z += Math.cos(t * 52) * 0.10 * decay;
         rotZ += Math.sin(t * 70) * 0.05 * decay;
       }
+    }
     g.position.x = x;
     g.position.z = z;
     g.rotation.y = rotY;
