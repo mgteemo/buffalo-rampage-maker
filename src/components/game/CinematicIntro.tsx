@@ -393,17 +393,24 @@ function Truck({ t, scene }: { t: number; scene: number }) {
       rotZ = Math.sin(t * 11) * (0.05 + k * 0.07);
       rotY = -k * 0.12 + Math.sin(t * 4) * 0.06; // begins to skid sideways
     } else if (scene >= 2) {
-      // Instant impact: skewed and stopped exactly where the tractor hit it.
-      x = -1.5;
-      z = 0.2;
-      rotY = -0.3;
-      rotZ = 0.08;
+      // Smooth crash: ease from end-of-scene-1 pose into the wreck pose over ~0.5s,
+      // then a damped settle. Avoids the previous instant snap.
+      const sceneStart = 6.6;
+      const u = Math.min(1, Math.max(0, (t - sceneStart) / 0.55));
+      const ease = 1 - Math.pow(1 - u, 3); // easeOutCubic
+      const startX = -1.5, startZ = 0.15, startRotY = -0.12, startRotZ = 0.06;
+      const endX = -1.5, endZ = 0.2, endRotY = -0.3, endRotZ = 0.08;
+      x = startX + (endX - startX) * ease;
+      z = startZ + (endZ - startZ) * ease;
+      rotY = startRotY + (endRotY - startRotY) * ease;
+      rotZ = startRotZ + (endRotZ - startRotZ) * ease;
       if (scene === 2) {
-        const shake = Math.sin(t * 80) * 0.1;
-        x += shake;
-        z += Math.cos(t * 70) * 0.08;
+        // Sharp impact shake that decays — smooth, not jittery snap.
+        const decay = Math.exp(-(t - sceneStart) * 3.2);
+        x += Math.sin(t * 60) * 0.12 * decay;
+        z += Math.cos(t * 52) * 0.10 * decay;
+        rotZ += Math.sin(t * 70) * 0.05 * decay;
       }
-    }
     g.position.x = x;
     g.position.z = z;
     g.rotation.y = rotY;
