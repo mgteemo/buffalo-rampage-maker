@@ -531,9 +531,14 @@ function Tractor({ t, scene }: { t: number; scene: number }) {
       g.position.set(12 - k * 13.5, 0.8, -3 + k * 3);
       g.rotation.y = Math.PI + k * 0.7;
     } else {
-      // wrecked, tilted, just past the truck
-      g.position.set(2.5, 0.7, -1);
-      g.rotation.set(0.4, Math.PI - 0.3, -0.3);
+      // Smoothly settle into wreck pose from the impact location.
+      const sceneStart = 6.6;
+      const u = Math.min(1, Math.max(0, (t - sceneStart) / 0.6));
+      const ease = 1 - Math.pow(1 - u, 3);
+      const sx = -1.5, sy = 0.8, sz = 0;
+      const ex = 2.5, ey = 0.7, ez = -1;
+      g.position.set(sx + (ex - sx) * ease, sy + (ey - sy) * ease, sz + (ez - sz) * ease);
+      g.rotation.set(0.4 * ease, Math.PI - 0.3 * ease, -0.3 * ease);
     }
   });
   return (
