@@ -311,12 +311,14 @@ function HarvesterMesh() {
   );
 }
 
-export const ROAD_LEN = 160;
+export const ROAD_LEN = 540;
 export const ROAD_WIDTH = 12;
 export const ROAD_Z = 0;
+export const CROSS_ROAD_LEN = 540;
+export const CROSS_ROAD_X = 0;
 
 export function Ground() {
-  const BOUND = 80;
+  const BOUND = 240;
   const dashes = useMemo(() => {
     const arr: { x: number }[] = [];
     const step = 4;
@@ -325,28 +327,45 @@ export function Ground() {
     }
     return arr;
   }, []);
+  const crossDashes = useMemo(() => {
+    const arr: { z: number }[] = [];
+    const step = 4;
+    for (let z = -CROSS_ROAD_LEN / 2 + 2; z <= CROSS_ROAD_LEN / 2 - 2; z += step) {
+      arr.push({ z });
+    }
+    return arr;
+  }, []);
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[400, 400]} />
+        <planeGeometry args={[1400, 1400]} />
         <meshStandardMaterial color="#6b4a2b" roughness={1} />
       </mesh>
-      {Array.from({ length: 16 }).map((_, i) => {
-        const x = ((i % 4) - 1.5) * 28;
-        const z = (Math.floor(i / 4) - 1.5) * 28;
+      {/* Patchwork of grass/farm fields spread across the larger map */}
+      {Array.from({ length: 64 }).map((_, i) => {
+        const gx = (i % 8) - 3.5;
+        const gz = Math.floor(i / 8) - 3.5;
+        const x = gx * 56;
+        const z = gz * 56;
+        const isFarm = (gx + gz) % 2 === 0;
         return (
           <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]} receiveShadow>
-            <planeGeometry args={[24, 24]} />
-            <meshStandardMaterial color="#4a6b3a" roughness={0.8} />
+            <planeGeometry args={[48, 48]} />
+            <meshStandardMaterial color={isFarm ? "#7d6232" : "#4a6b3a"} roughness={0.9} />
           </mesh>
         );
       })}
-      {/* Wide straight asphalt road along the X axis */}
+      {/* Main east-west highway */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, ROAD_Z]} receiveShadow>
         <planeGeometry args={[ROAD_LEN, ROAD_WIDTH]} />
         <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
       </mesh>
-      {/* White lane edges */}
+      {/* Cross road through the township */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CROSS_ROAD_X, 0.03, 0]} receiveShadow>
+        <planeGeometry args={[ROAD_WIDTH, CROSS_ROAD_LEN]} />
+        <meshStandardMaterial color="#2d2d2d" roughness={0.95} />
+      </mesh>
+      {/* White lane edges on main road */}
       {[-1, 1].map((s) => (
         <mesh
           key={`edge-${s}`}
@@ -357,10 +376,17 @@ export function Ground() {
           <meshBasicMaterial color="#f5f5f5" />
         </mesh>
       ))}
-      {/* Yellow dashed center line */}
+      {/* Yellow dashed center line on main road */}
       {dashes.map((d, i) => (
         <mesh key={`dash-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[d.x, 0.05, ROAD_Z]}>
           <planeGeometry args={[2.2, 0.28]} />
+          <meshBasicMaterial color="#f4c430" />
+        </mesh>
+      ))}
+      {/* Yellow dashed center line on cross road */}
+      {crossDashes.map((d, i) => (
+        <mesh key={`cdash-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[CROSS_ROAD_X, 0.05, d.z]}>
+          <planeGeometry args={[0.28, 2.2]} />
           <meshBasicMaterial color="#f4c430" />
         </mesh>
       ))}
@@ -402,8 +428,8 @@ export function GrassTufts() {
             if (!m) return;
             for (let i = 0; i < PER_SHADE; i++) {
               // Cluster blades in tufts: pick a tuft center, then jitter.
-              const tx = (Math.random() - 0.5) * 150;
-              const tz = (Math.random() - 0.5) * 150;
+              const tx = (Math.random() - 0.5) * 460;
+              const tz = (Math.random() - 0.5) * 460;
               const jx = (Math.random() - 0.5) * 0.6;
               const jz = (Math.random() - 0.5) * 0.6;
               const scale = 0.7 + Math.random() * 0.7;
@@ -447,23 +473,36 @@ export function Township({ buffaloRef }: { buffaloRef: React.MutableRefObject<Bu
       { body: "#b9c9d3", roof: "#2d4a3a" },
       { body: "#ead9b6", roof: "#7a3a2a" },
     ];
-    const blocks = [
-      { cx: -30, cz: -30 },
-      { cx: 30, cz: -30 },
-      { cx: -30, cz: 30 },
-      { cx: -55, cz: 20 },
-      { cx: 55, cz: 25 },
-      { cx: 0, cz: -55 },
-    ];
+    const blocks: { cx: number; cz: number }[] = [];
+    // Dense township blocks near origin (the city)
+    for (let bx = -2; bx <= 2; bx++) {
+      for (let bz = -2; bz <= 2; bz++) {
+        // skip blocks the highways pass through
+        if (bx === 0 && Math.abs(bz) <= 0) continue;
+        blocks.push({ cx: bx * 36, cz: bz * 36 });
+      }
+    }
+    // Outlying farmhouse clusters spread across the countryside
+    [
+      { cx: -120, cz: -60 }, { cx: -150, cz: 70 },
+      { cx: 120, cz: 60 }, { cx: 160, cz: -80 },
+      { cx: -80, cz: -150 }, { cx: 90, cz: 150 },
+      { cx: -180, cz: 0 }, { cx: 180, cz: 0 },
+    ].forEach((b) => blocks.push(b));
     blocks.forEach((b, bi) => {
-      for (let i = 0; i < 5; i++) {
+      const count = Math.abs(b.cx) > 100 || Math.abs(b.cz) > 100 ? 2 : 5;
+      for (let i = 0; i < count; i++) {
         const p = palette[(bi + i) % palette.length];
         const w = 4 + Math.random() * 3;
         const d = 4 + Math.random() * 3;
         const h = 3 + Math.random() * 5;
+        const px = b.cx + (Math.random() - 0.5) * 18;
+        const pz = b.cz + (Math.random() - 0.5) * 18;
+        // Don't drop buildings on the road
+        if (Math.abs(pz) < 8 && Math.abs(px) < ROAD_LEN / 2) continue;
+        if (Math.abs(px) < 8 && Math.abs(pz) < CROSS_ROAD_LEN / 2) continue;
         arr.push({
-          x: b.cx + (Math.random() - 0.5) * 18,
-          z: b.cz + (Math.random() - 0.5) * 18,
+          x: px, z: pz,
           w, d, h,
           body: p.body,
           roof: p.roof,
@@ -595,12 +634,18 @@ type Tree = {
 export function Trees({ buffaloRef }: { buffaloRef: React.MutableRefObject<BuffaloHandle> }) {
   const trees = useMemo<Tree[]>(() => {
     const arr: Tree[] = [];
-    for (let i = 0; i < 36; i++) {
-      const ang = Math.random() * Math.PI * 2;
-      const r = 45 + Math.random() * 45;
+    for (let i = 0; i < 160; i++) {
+      // Spread across the whole countryside, but keep clear of the highways.
+      let x = 0, z = 0;
+      for (let tries = 0; tries < 6; tries++) {
+        x = (Math.random() - 0.5) * 440;
+        z = (Math.random() - 0.5) * 440;
+        if (Math.abs(z) > 9 || Math.abs(x) > ROAD_LEN / 2 - 4) {
+          if (Math.abs(x) > 9 || Math.abs(z) > CROSS_ROAD_LEN / 2 - 4) break;
+        }
+      }
       arr.push({
-        x: Math.cos(ang) * r,
-        z: Math.sin(ang) * r,
+        x, z,
         s: 0.8 + Math.random() * 0.8,
         fallen: false,
         fallProgress: 0,
@@ -819,5 +864,136 @@ export function RaceWaypoint({
         <meshStandardMaterial color="#ffd400" emissive="#ffaa00" emissiveIntensity={0.6} />
       </mesh>
     </group>
+  );
+}
+
+// ============= Countryside: parks, farms, country homes along the highway =============
+// Static visual decoration spread across the larger map to make it feel alive.
+// Kept simple/no-collision to avoid frame cost; players can drive through parks.
+export function Countryside() {
+  const homes = useMemo(() => {
+    const arr: { x: number; z: number; rot: number; body: string; roof: string }[] = [];
+    const palette = [
+      { body: "#e8c39a", roof: "#9b3a2a" },
+      { body: "#f3e3c1", roof: "#3a5a78" },
+      { body: "#d39a72", roof: "#5b2f1f" },
+      { body: "#ead9b6", roof: "#7a3a2a" },
+    ];
+    // Roadside homes along the main highway, alternating sides.
+    for (let i = 0; i < 26; i++) {
+      const x = -ROAD_LEN / 2 + 30 + i * 18 + (Math.random() - 0.5) * 4;
+      if (Math.abs(x) < 60) continue; // leave room for the township near origin
+      const side = i % 2 === 0 ? 1 : -1;
+      const z = side * (16 + Math.random() * 8);
+      const p = palette[i % palette.length];
+      arr.push({ x, z, rot: side > 0 ? Math.PI : 0, body: p.body, roof: p.roof });
+    }
+    return arr;
+  }, []);
+
+  const parks = useMemo(() => {
+    // Small green parks with a few trees each.
+    const arr: { x: number; z: number; trees: { x: number; z: number; s: number }[] }[] = [];
+    const spots = [
+      { x: -180, z: 60 }, { x: -100, z: -70 }, { x: 70, z: -55 },
+      { x: 150, z: 50 }, { x: -50, z: 100 }, { x: 110, z: 130 },
+      { x: -150, z: -140 }, { x: 200, z: -150 },
+    ];
+    spots.forEach((s) => {
+      const trees = Array.from({ length: 5 }).map(() => ({
+        x: (Math.random() - 0.5) * 18,
+        z: (Math.random() - 0.5) * 18,
+        s: 0.7 + Math.random() * 0.6,
+      }));
+      arr.push({ x: s.x, z: s.z, trees });
+    });
+    return arr;
+  }, []);
+
+  const farms = useMemo(() => {
+    // Tilled farm plots near outlying farmhouses.
+    const arr: { x: number; z: number; color: string }[] = [];
+    const spots = [
+      { x: -130, z: -30 }, { x: -160, z: 100 }, { x: 130, z: 90 },
+      { x: 170, z: -50 }, { x: -60, z: -170 }, { x: 80, z: 170 },
+    ];
+    const colors = ["#8a6a32", "#a37c3a", "#6b5a2a", "#9c8240"];
+    spots.forEach((s, i) => arr.push({ ...s, color: colors[i % colors.length] }));
+    return arr;
+  }, []);
+
+  return (
+    <>
+      {/* Park lawns with trees */}
+      {parks.map((p, i) => (
+        <group key={`park-${i}`} position={[p.x, 0, p.z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+            <planeGeometry args={[22, 22]} />
+            <meshStandardMaterial color="#4f8a3a" roughness={0.9} />
+          </mesh>
+          {/* park bench */}
+          <mesh position={[0, 0.4, 0]} castShadow>
+            <boxGeometry args={[1.6, 0.15, 0.4]} />
+            <meshStandardMaterial color="#6b3a1f" />
+          </mesh>
+          {p.trees.map((t, ti) => (
+            <group key={ti} position={[t.x, 0, t.z]} scale={[t.s, t.s, t.s]}>
+              <mesh castShadow position={[0, 1.0, 0]}>
+                <cylinderGeometry args={[0.2, 0.3, 2.0, 6]} />
+                <meshStandardMaterial color="#6b4423" />
+              </mesh>
+              <mesh castShadow position={[0, 2.6, 0]}>
+                <sphereGeometry args={[1.2, 10, 8]} />
+                <meshStandardMaterial color="#3f7a2a" />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      ))}
+
+      {/* Farm plots */}
+      {farms.map((f, i) => (
+        <group key={`farm-${i}`} position={[f.x, 0, f.z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+            <planeGeometry args={[26, 18]} />
+            <meshStandardMaterial color={f.color} roughness={1} />
+          </mesh>
+          {/* furrow stripes */}
+          {Array.from({ length: 9 }).map((_, k) => (
+            <mesh
+              key={k}
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[-12 + k * 3, 0.04, 0]}
+            >
+              <planeGeometry args={[0.3, 17]} />
+              <meshStandardMaterial color="#3a2a14" />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* Roadside country homes */}
+      {homes.map((h, i) => (
+        <group key={`home-${i}`} position={[h.x, 0, h.z]} rotation={[0, h.rot, 0]}>
+          <mesh castShadow receiveShadow position={[0, 1.7, 0]}>
+            <boxGeometry args={[5, 3.4, 4.5]} />
+            <meshStandardMaterial color={h.body} roughness={0.9} />
+          </mesh>
+          <mesh castShadow position={[0, 4.0, 0]} rotation={[0, Math.PI / 4, 0]}>
+            <coneGeometry args={[3.8, 1.8, 4]} />
+            <meshStandardMaterial color={h.roof} roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 1.0, 2.26]}>
+            <planeGeometry args={[1, 1.8]} />
+            <meshStandardMaterial color="#3a2418" />
+          </mesh>
+          {/* mailbox by the road */}
+          <mesh castShadow position={[0, 0.8, 6]}>
+            <boxGeometry args={[0.4, 0.3, 0.6]} />
+            <meshStandardMaterial color="#b03a2e" />
+          </mesh>
+        </group>
+      ))}
+    </>
   );
 }

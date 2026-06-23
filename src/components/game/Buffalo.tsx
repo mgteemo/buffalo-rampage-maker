@@ -4,7 +4,11 @@ import * as THREE from "three";
 import { input, world } from "./gameState";
 import type { Skin } from "./skins";
 
-const MAP_BOUND = 80;
+const MAP_BOUND = 240;
+// Starting point: far outside the city, on the road, heading east toward town.
+export const BUFFALO_START_X = -210;
+export const BUFFALO_START_Z = 0;
+export const BUFFALO_START_YAW = Math.PI / 2; // faces +X (toward city at origin)
 
 export type BuffaloHandle = {
   group: THREE.Group | null;
@@ -23,7 +27,7 @@ export function Buffalo({ apiRef, skin }: { apiRef: React.MutableRefObject<Buffa
   const legBR = useRef<THREE.Group>(null!);
 
   const velocity = useRef(new THREE.Vector3());
-  const yaw = useRef(0);
+  const yaw = useRef(BUFFALO_START_YAW);
   const grounded = useRef(true);
   const phase = useRef(0);
 
@@ -134,7 +138,7 @@ export function Buffalo({ apiRef, skin }: { apiRef: React.MutableRefObject<Buffa
   });
 
   return (
-    <group ref={group} position={[0, 0.75, 0]}>
+    <group ref={group} position={[BUFFALO_START_X, 0.75, BUFFALO_START_Z]} rotation={[0, BUFFALO_START_YAW, 0]}>
       <group ref={body}>
         {/* Belly/body — chunky cartoon barrel */}
         <mesh castShadow receiveShadow position={[0, 0.2, 0]}>

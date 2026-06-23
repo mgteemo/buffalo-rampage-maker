@@ -259,9 +259,11 @@ class AudioManager {
     const panner = ctx.createPanner();
     panner.panningModel = "HRTF";
     panner.distanceModel = "inverse";
-    panner.refDistance = 4;
-    panner.maxDistance = 60;
-    panner.rolloffFactor = 1.5;
+    // Car horns should fall off much faster than engines — they're sharp short blasts
+    // that get annoying from far away. Engines stay audible at longer ranges.
+    panner.refDistance = kind === "car" ? 3 : 4;
+    panner.maxDistance = kind === "car" ? 28 : 60;
+    panner.rolloffFactor = kind === "car" ? 2.8 : 1.5;
     const gain = ctx.createGain();
     gain.gain.value = 0;
     gain.connect(panner).connect(this.sfxGain);
